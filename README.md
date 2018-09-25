@@ -1,6 +1,6 @@
 ## scCredentialsDecrypt
 
-**scCredentialsDecrypt** is a collection of scripts that aims to decrypt credentials files used by **Supercell**.
+**scCredentialsDecrypt** is a collection of scripts that aims to decrypt or encrypt credentials files used by **Supercell**.
 
 ## Dependencies
 

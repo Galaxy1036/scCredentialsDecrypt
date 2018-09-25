@@ -30,27 +30,29 @@ class SecurePreferences:
         if self.mode == AES.MODE_ECB:
             self.aes_stream = AES.new(self.key, self.mode)
 
-    def decrypt(self, cipher):
-        crypted = base64.b64decode(cipher)
-
+    def encrypt(self, plain):
         # If it's CBC we have to re-create a stream for each values
         if self.mode == AES.MODE_CBC:
             self.aes_stream = AES.new(self.key, self.mode, self.IV[:AES.block_size])
 
-        return self.pkcs5_unpad(self.aes_stream.decrypt(crypted)).decode('utf-8')
+        encrypted = self.aes_stream.encrypt(self.pkcs5_pad(plain.encode('utf-8')))
+        return base64.b64encode(encrypted).decode('utf-8')
 
-    def pkcs5_unpad(self, plain):
-        return plain[:-plain[-1]]
+    def pkcs5_pad(self, plain):
+        block_size = AES.block_size
+        pad_size = block_size - len(plain) % block_size
+
+        return plain + bytes([pad_size] * pad_size)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='''
-        Command line tool that aim to decrypt supercell
+        Command line tool that aim to encrypt supercell
         credentials files''')
 
-    parser.add_argument('file', help='xml file to be decrypted', nargs=1)
-    parser.add_argument('-a', '--android_id', help='android id that will be used as a key to decrypt the xml file')
-    parser.add_argument('-p', '--package_name', help='package name that will be used to generate decrypt key')
+    parser.add_argument('file', help='xml file to be encrypted', nargs=1)
+    parser.add_argument('-a', '--android_id', help='android id that will be used as a key to encrypt the xml file')
+    parser.add_argument('-p', '--package_name', help='package name that will be used to generate encrypt key')
 
     args = parser.parse_args()
 
@@ -75,10 +77,10 @@ if __name__ == '__main__':
                         key = line.attrib['name']
                         value = line.text
 
-                        line.set('name', key_stream.decrypt(key))
-                        line.text = value_stream.decrypt(value)
+                        line.set('name', key_stream.encrypt(key))
+                        line.text = value_stream.encrypt(value)
 
-                    output_name = '_decrypted'.join(os.path.splitext(os.path.basename(xml_file)))
+                    output_name = '_encrypted'.join(os.path.splitext(os.path.basename(xml_file)))
 
                     with open(output_name, 'wb') as f:
                         f.write(etree.tostring(et, xml_declaration=True, encoding='utf-8', standalone='yes'))
